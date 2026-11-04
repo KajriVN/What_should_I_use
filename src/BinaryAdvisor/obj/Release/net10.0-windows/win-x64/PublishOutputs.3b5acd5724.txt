@@ -1,0 +1,3 @@
+D:\Github\What_should_I_use\dist\BinaryAdvisor_Standalone\Config\rules.yaml
+D:\Github\What_should_I_use\dist\BinaryAdvisor_Standalone\Config\tools_config.json
+D:\Github\What_should_I_use\dist\BinaryAdvisor_Standalone\BinaryAdvisor.exe

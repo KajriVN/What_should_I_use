@@ -1,0 +1,5 @@
+﻿Äáº·t bá»™ Detect It Easy Portable (chá»©a diec.exe, thÆ° má»¥c db/, ...) vÃ o thÆ° má»¥c nÃ y:
+  tools_portable\diec\diec.exe
+
+Binary Advisor sáº½ tá»± Ä‘á»™ng nháº­n diá»‡n ngay khi khá»Ÿi Ä‘á»™ng mÃ  khÃ´ng cáº§n cáº¥u hÃ¬nh thá»§ cÃ´ng!
+Hoáº·c má»Ÿ Settings (âš™) trong pháº§n má»m Ä‘á»ƒ trá» tá»›i Ä‘Æ°á»ng dáº«n diec.exe sáºµn cÃ³ trÃªn mÃ¡y cá»§a báº¡n.

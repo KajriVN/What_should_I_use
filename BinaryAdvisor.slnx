@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BinaryAdvisor/BinaryAdvisor.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BinaryAdvisor.Tests/BinaryAdvisor.Tests.csproj" />
+  </Folder>
+</Solution>

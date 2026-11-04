@@ -1,0 +1,131 @@
+{
+  "diec_path": "C:/Tools/die_win64_portable/diec.exe",
+  "tools": {
+    "pe_bear": {
+      "name": "PE-bear",
+      "type": "gui",
+      "executable": "C:/Tools/PE-bear/PE-bear.exe",
+      "args": ["{file}"]
+    },
+    "die_gui": {
+      "name": "Detect It Easy (GUI)",
+      "type": "gui",
+      "executable": "C:/Tools/die_win64_portable/die.exe",
+      "args": ["{file}"]
+    },
+    "dnspy": {
+      "name": "dnSpyEx",
+      "type": "gui",
+      "executable": "C:/Tools/dnSpy/dnSpy.exe",
+      "args": ["{file}"]
+    },
+    "ilspy": {
+      "name": "ILSpy",
+      "type": "gui",
+      "executable": "C:/Tools/ILSpy/ILSpy.exe",
+      "args": ["{file}"]
+    },
+    "ida64": {
+      "name": "IDA Pro (64-bit)",
+      "type": "gui",
+      "executable": "C:/Program Files/IDA Professional 9.0/ida.exe",
+      "args": ["{file}"]
+    },
+    "ghidra": {
+      "name": "Ghidra",
+      "type": "gui",
+      "executable": "C:/Tools/ghidra/ghidraRun.bat",
+      "args": []
+    },
+    "x64dbg": {
+      "name": "x64dbg",
+      "type": "gui",
+      "executable": "C:/Tools/x64dbg/release/x64/x64dbg.exe",
+      "args": ["{file}"]
+    },
+    "x32dbg": {
+      "name": "x32dbg",
+      "type": "gui",
+      "executable": "C:/Tools/x64dbg/release/x32/x32dbg.exe",
+      "args": ["{file}"]
+    },
+    "procmon": {
+      "name": "Process Monitor",
+      "type": "gui",
+      "executable": "C:/Tools/SysinternalsSuite/Procmon64.exe",
+      "args": []
+    },
+    "upx": {
+      "name": "UPX Unpacker",
+      "type": "cli",
+      "executable": "C:/Tools/upx/upx.exe",
+      "args": ["-d", "{file}", "-o", "{file_dir}/{file_stem}_unpacked{file_ext}"]
+    },
+    "goresym": {
+      "name": "GoReSym",
+      "type": "cli",
+      "executable": "C:/Tools/GoReSym/GoReSym.exe",
+      "args": ["-t", "-d", "-p", "{file}"]
+    },
+    "floss": {
+      "name": "FLOSS (Mandiant)",
+      "type": "cli",
+      "executable": "C:/Tools/floss/floss.exe",
+      "args": ["-n", "6", "{file}"]
+    },
+    "capa": {
+      "name": "CAPA (Mandiant)",
+      "type": "cli",
+      "executable": "C:/Tools/capa/capa.exe",
+      "args": ["{file}"]
+    },
+    "reactor_slayer": {
+      "name": "NETReactorSlayer (CLI)",
+      "type": "cli",
+      "executable": "C:/Tools/NETReactorSlayer/NETReactorSlayer.CLI.exe",
+      "args": ["{file}", "--no-pause"]
+    },
+    "reactor_slayer_gui": {
+      "name": "NETReactorSlayer (GUI)",
+      "type": "gui",
+      "executable": "C:/Tools/NETReactorSlayer/NETReactorSlayer.exe",
+      "args": ["{file}"]
+    },
+    "de4dot": {
+      "name": "de4dot (.NET Deobfuscator)",
+      "type": "cli",
+      "executable": "C:/Tools/de4dot/de4dot.exe",
+      "args": ["{file}", "-o", "{file_dir}/{file_stem}_cleaned{file_ext}"]
+    },
+    "pyinstxtractor": {
+      "name": "pyinstxtractor-ng",
+      "type": "cli",
+      "executable": "C:/Tools/pyinstxtractor/pyinstxtractor-ng.exe",
+      "args": ["{file}"]
+    },
+    "innounp": {
+      "name": "Inno Setup Unpacker (innounp)",
+      "type": "cli",
+      "executable": "C:/Tools/innounp/innounp.exe",
+      "args": ["-x", "-d{file_dir}/{file_stem}_inno", "{file}"]
+    },
+    "sevenzip": {
+      "name": "7-Zip CLI",
+      "type": "cli",
+      "executable": "C:/Program Files/7-Zip/7z.exe",
+      "args": ["x", "{file}", "-o{file_dir}/{file_stem}_extracted", "-y"]
+    },
+    "vb_decompiler": {
+      "name": "VB Decompiler",
+      "type": "gui",
+      "executable": "C:/Tools/VB Decompiler/VB Decompiler.exe",
+      "args": ["{file}"]
+    },
+    "idr": {
+      "name": "IDR (Interactive Delphi Reconstructor)",
+      "type": "gui",
+      "executable": "C:/Tools/IDR/idr.exe",
+      "args": ["{file}"]
+    }
+  }
+}

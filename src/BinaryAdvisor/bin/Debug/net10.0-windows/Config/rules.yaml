@@ -1,0 +1,539 @@
+heuristic_entropy_threshold: 7.2
+
+# Quy tắc ánh xạ từ kết quả DIE theo 3 mức ưu tiên:
+# Ưu tiên 1: Installer / SFX / Archive Dropper
+# Ưu tiên 2: Packer / Protector / Obfuscator
+# Ưu tiên 3: Compiler / Ngôn ngữ / Runtime
+
+rules:
+  # =========================================================================
+  # ƯU TIÊN 1 — INSTALLER / SFX / ARCHIVE DROPPER
+  # =========================================================================
+  - id: inno_setup
+    title: "Bộ cài đặt Inno Setup"
+    priority: 1
+    category: "Installer/SFX"
+    match:
+      types: ["Installer", "SFX", "Archive", "Packer", "Signature"]
+      keywords: ["Inno Setup"]
+    summary: "Tệp là gói cài đặt Inno Setup. Tuyệt đối KHÔNG mở trực tiếp stub cài đặt trong IDA/Ghidra — hãy bung gói để lấy file thực thi thực sự và kịch bản install_script.iss trước."
+    recommendations:
+      - tool_id: innounp
+        fallback_name: "Inno Setup Unpacker (innounp)"
+        fallback_type: "cli"
+        step: 1
+        reason: "Giải nén toàn bộ tệp thực thi bên trong gói Inno Setup và khôi phục kịch bản cài đặt (.iss)."
+        warning: "Sau khi bung ra thư mục *_inno, hãy kéo file .exe/.dll bên trong mục {app} vào lại Binary Advisor để quét tiếp!"
+      - tool_id: pe_bear
+        fallback_name: "PE-bear"
+        fallback_type: "gui"
+        step: 2
+        reason: "Kiểm tra Overlay, chữ ký số (Digital Signature) và bảng tài nguyên của bộ cài."
+        warning: ""
+      - tool_id: procmon
+        fallback_name: "Process Monitor"
+        fallback_type: "gui"
+        step: 3
+        reason: "Giám sát hành vi thả file (Dropper), sửa đổi Registry và tiến trình con khi chạy cài đặt trong máy ảo."
+        warning: "Chỉ chạy thử bộ cài nghi ngờ trong môi trường Sandbox / Máy ảo cô lập!"
+
+  - id: nsis_installer
+    title: "Bộ cài đặt NSIS (Nullsoft Scriptable Install System)"
+    priority: 1
+    category: "Installer/SFX"
+    match:
+      types: ["Installer", "SFX", "Archive", "Signature"]
+      keywords: ["Nullsoft", "NSIS"]
+    summary: "Tệp là bộ cài NSIS. Dùng 7-Zip để bung trực tiếp payload và kịch bản cài đặt (.nsi) mà không cần kích hoạt bộ cài."
+    recommendations:
+      - tool_id: sevenzip
+        fallback_name: "7-Zip CLI"
+        fallback_type: "cli"
+        step: 1
+        reason: "7-Zip hỗ trợ đọc cấu trúc NSIS, trích xuất toàn bộ payload kèm script cài đặt .nsi."
+        warning: "Một số phiên bản NSIS tùy biến (NSISBI / mã hóa LZMA đặc biệt) có thể cần bản 7-Zip mới nhất."
+      - tool_id: floss
+        fallback_name: "FLOSS"
+        fallback_type: "cli"
+        step: 2
+        reason: "Trích xuất chuỗi tĩnh và chuỗi bị che giấu trong kịch bản khởi chạy."
+        warning: ""
+      - tool_id: procmon
+        fallback_name: "Process Monitor"
+        fallback_type: "gui"
+        step: 3
+        reason: "Theo dõi các file được thả vào %TEMP% / %APPDATA% trong máy ảo."
+        warning: "Thực thi trong máy ảo (VM) đã ngắt mạng."
+
+  - id: pyinstaller_bundle
+    title: "Ứng dụng Python đóng gói (PyInstaller / py2exe)"
+    priority: 1
+    category: "Installer/SFX"
+    match:
+      types: ["Installer", "Packer", "SFX", "Compiler", "Library", "Archive", "Signature"]
+      keywords: ["PyInstaller", "py2exe", "cx_Freeze", "python3", "python2"]
+    summary: "Đây là trình thông dịch CPython đóng gói kèm bytecode (.pyc). Đừng dịch ngược stub C++ của bootloader — hãy trích xuất file .pyc ra để dịch ngược về mã nguồn Python."
+    recommendations:
+      - tool_id: pyinstxtractor
+        fallback_name: "pyinstxtractor-ng"
+        fallback_type: "cli"
+        step: 1
+        reason: "Bóc tách CArchive/PYZ của PyInstaller để thu lấy các tệp bytecode .pyc gốc (tự động sửa magic header)."
+        warning: "Sau khi bung xong, hãy dùng pycdc (Decompyle++) hoặc PyLingual trên file <tên_entry>.pyc để đọc lại code Python."
+      - tool_id: die_gui
+        fallback_name: "Detect It Easy (GUI)"
+        fallback_type: "gui"
+        step: 2
+        reason: "Kiểm tra Overlay chứa CArchive Python và phiên bản DLL python3xx.dll đi kèm."
+        warning: "Nếu kho PYZ bị mã hóa AES (--key), kiểm tra file pyimod00_crypto_key.pyc để lấy khóa."
+      - tool_id: procmon
+        fallback_name: "Process Monitor"
+        fallback_type: "gui"
+        step: 3
+        reason: "Quan sát thư mục _MEIxxxxxx giải nén tạm trong %TEMP% khi chương trình khởi chạy."
+        warning: "Chỉ chạy trong môi trường máy ảo an toàn."
+
+  - id: sfx_archive
+    title: "Gói tự giải nén SFX (7-Zip / WinRAR / CAB / MSI)"
+    priority: 1
+    category: "Installer/SFX"
+    match:
+      types: ["Installer", "SFX", "Archive", "Format", "Signature"]
+      keywords: ["7-Zip", "WinRAR", "RAR SFX", "Microsoft Cabinet", "Windows Installer", "MSI"]
+    summary: "Phát hiện gói nén tự bung (SFX / MSI). Bước đầu tiên bắt buộc là giải nén tĩnh toàn bộ tệp bên trong rồi mới phân tích payload thực."
+    recommendations:
+      - tool_id: sevenzip
+        fallback_name: "7-Zip CLI"
+        fallback_type: "cli"
+        step: 1
+        reason: "Giải nén toàn bộ nội dung gói SFX/CAB/MSI ra thư mục riêng mà không cần thực thi stub."
+        warning: "Nếu gói WinRAR SFX đặt mật khẩu, kiểm tra comment kịch bản SFX hoặc bắt lệnh dòng lệnh khi giải nén động."
+      - tool_id: capa
+        fallback_name: "CAPA"
+        fallback_type: "cli"
+        step: 2
+        reason: "Nhận diện nhanh hành vi thực thi của stub giải nén."
+        warning: ""
+      - tool_id: procmon
+        fallback_name: "Process Monitor"
+        fallback_type: "gui"
+        step: 3
+        reason: "Theo dõi tiến trình con được gọi sau khi SFX bung tệp."
+        warning: "Chỉ thực hiện trong máy ảo (VM)."
+
+  # =========================================================================
+  # ƯU TIÊN 2 — PACKER / PROTECTOR / OBFUSCATOR
+  # =========================================================================
+  - id: upx_packer
+    title: "Tệp nén bằng UPX (Ultimate Packer for eXecutables)"
+    priority: 2
+    category: "Packer/Protector"
+    match:
+      types: ["Packer", "Protector", "Signature"]
+      keywords: ["UPX"]
+    summary: "Tệp thực thi bị nén bằng UPX. Hãy giải nén bằng lệnh 'upx -d' trước khi đưa vào IDA/Ghidra/dnSpy để thấy toàn bộ hàm và bảng Import gốc."
+    recommendations:
+      - tool_id: upx
+        fallback_name: "UPX Unpacker"
+        fallback_type: "cli"
+        step: 1
+        reason: "Giải nén tĩnh nhanh chóng về file gốc (*_unpacked.exe) với đầy đủ Import Table và Section gốc."
+        warning: "Nếu 'upx -d' báo lỗi CantUnpackException, khả năng cao tác giả đã xóa/sửa chữ ký 'UPX!' hoặc trường p_filesize — hãy mở PE-bear để kiểm tra hoặc dump bằng x64dbg."
+      - tool_id: pe_bear
+        fallback_name: "PE-bear"
+        fallback_type: "gui"
+        step: 2
+        reason: "Kiểm tra các section UPX0/UPX1, Raw Size = 0 (Virtual Size lớn) và đối chiếu Entry Point sau khi giải nén."
+        warning: ""
+      - tool_id: x64dbg
+        fallback_name: "x64dbg"
+        fallback_type: "gui"
+        step: 3
+        reason: "Unpack thủ công (nếu UPX bị biến đổi) bằng cách tìm lệnh nhảy xa (tail jump JMP OEP / POPAD) rồi dùng Scylla để Dump & Fix IAT."
+        warning: "Cẩn thận khi debug mẫu nghi ngờ mã độc — luôn chạy trong VM!"
+
+  - id: dotnet_reactor
+    title: "Tệp .NET bảo vệ bằng Eziriz .NET Reactor"
+    priority: 2
+    category: "Packer/Protector"
+    match:
+      types: ["Protector", "Packer", "Obfuscator", "Cryptor", "Signature"]
+      keywords: [".NET Reactor", "Eziriz", "NecroBit", "Reactor"]
+    summary: "Ứng dụng .NET bị bảo vệ bởi .NET Reactor (NecroBit mã hóa thân hàm IL, che giấu chuỗi, Control-Flow, Anti-Tamper & nhúng Assembly). Hãy dùng NETReactorSlayer để gỡ toàn bộ lớp bảo vệ ra tệp *_Slayed.exe trước khi mở bằng dnSpyEx!"
+    recommendations:
+      - tool_id: reactor_slayer
+        fallback_name: "NETReactorSlayer (CLI)"
+        fallback_type: "cli"
+        step: 1
+        reason: "Công cụ chuyên trị .NET Reactor (SychicBoy): tự động giải mã NecroBit, giải mã chuỗi, khôi phục Control-Flow, gỡ Anti-Tamper/Anti-Debug và trích xuất DLL nhúng ra tệp *_Slayed.exe."
+        warning: "Nếu tệp *_Slayed.exe sau khi gỡ bị văng lỗi khi chạy thử, hãy thêm cờ '--preserve-all --keep-max-stack' vào ô dòng lệnh bên dưới rồi bấm Run CLI lại!"
+      - tool_id: reactor_slayer_gui
+        fallback_name: "NETReactorSlayer (GUI)"
+        fallback_type: "gui"
+        step: 1
+        reason: "Mở giao diện đồ họa của NETReactorSlayer nếu bạn muốn bật/tắt thủ công từng bước giải mã (NecroBit, Proxy Call, Costura, Rename)."
+        warning: ""
+      - tool_id: dnspy
+        fallback_name: "dnSpyEx"
+        fallback_type: "gui"
+        step: 2
+        reason: "Nạp tệp *_Slayed.exe (sau khi chạy NETReactorSlayer ở Bước 1) vào dnSpyEx để đọc mã nguồn C# đã được khôi phục."
+        warning: ""
+      - tool_id: x64dbg
+        fallback_name: "x64dbg / Memory Dumper"
+        fallback_type: "gui"
+        step: 3
+        reason: "Nếu mẫu bật chế độ Native Exe Stub tùy biến khiến công cụ tĩnh không đọc được Metadata, hãy chạy trong VM và dùng ExtremeDumper / MegaDumper / x64dbg để dump Assembly .NET từ RAM."
+        warning: "Luôn thực thi mẫu không rõ nguồn gốc trong Máy ảo (VM) cô lập!"
+
+  - id: dotnet_obfuscator
+    title: "Tệp .NET bị làm rối / bảo vệ (ConfuserEx / SmartAssembly / Obfuscator)"
+    priority: 2
+    category: "Packer/Protector"
+    match:
+      types: ["Protector", "Packer", "Obfuscator", "Cryptor", "Signature"]
+      keywords: ["Confuser", "SmartAssembly", "Babel .NET", "Dotfuscator", "Agile.NET", "Eazfuscator", "KoiVM", "Costura"]
+    summary: "Ứng dụng .NET đã bị che giấu tên hàm, mã hóa chuỗi hoặc đóng gói module. Cần dùng công cụ gỡ rối IL (de4dot) hoặc dump module từ RAM trước khi đọc code trong dnSpyEx."
+    recommendations:
+      - tool_id: de4dot
+        fallback_name: "de4dot (.NET Deobfuscator)"
+        fallback_type: "cli"
+        step: 1
+        reason: "Tự động giải mã chuỗi, dọn dẹp Control-Flow Flattening và đổi lại tên lớp/phương thức dễ đọc cho .NET."
+        warning: "Với ConfuserEx biến thể mới hoặc Jit-hook (.NET Reactor Native), có thể cần kết hợp ExtremeDumper / Harmony để dump từ bộ nhớ."
+      - tool_id: dnspy
+        fallback_name: "dnSpyEx"
+        fallback_type: "gui"
+        step: 2
+        reason: "Đọc mã nguồn C# sau khi làm sạch, kiểm tra bảng Metadata (#Strings, #US, #Blob) và tài nguyên nhúng."
+        warning: ""
+      - tool_id: dnspy
+        fallback_name: "dnSpyEx (Debugger)"
+        fallback_type: "gui"
+        step: 3
+        reason: "Đặt breakpoint tại Module.ResolveMethod / Assembly.Load để bắt payload .NET giải mã trực tiếp trong bộ nhớ (Memory Window)."
+        warning: "Không chạy trực tiếp trên máy thật nếu chưa rõ nguồn gốc tệp."
+
+  - id: heavy_protector
+    title: "Trình bảo vệ thương mại hạng nặng (VMProtect / Themida / Enigma)"
+    priority: 2
+    category: "Packer/Protector"
+    match:
+      types: ["Protector", "Packer", "Cryptor", "Virtualizer", "Signature"]
+      keywords: ["VMProtect", "Themida", "WinLicense", "Enigma", "Obsidium", "Armadillo", "SecuROM", "Denuvo"]
+    summary: "Tệp được bảo vệ bởi trình chống dịch ngược / ảo hóa tập lệnh (Code Virtualization & Anti-Debug). Không có công cụ giải nén tĩnh 1-click — trọng tâm là phân tích động, vượt Anti-Debug và Dump bộ nhớ."
+    recommendations:
+      - tool_id: pe_bear
+        fallback_name: "PE-bear"
+        fallback_type: "gui"
+        step: 1
+        reason: "Nhận diện các section ảo hóa (.vmp0, .vmp1, .themida), kiểm tra TLS Callbacks (chạy trước cả Entry Point!) và IAT bị xóa."
+        warning: "Chú ý mục TLS Directory trong PE-bear: các kỹ thuật Anti-Debug thường kích hoạt ngay trong TLS Callback."
+      - tool_id: ida64
+        fallback_name: "IDA Pro (64-bit)"
+        fallback_type: "gui"
+        step: 2
+        reason: "Phân tích bản Memory Dump sau khi vượt qua lớp vỏ nạp ban đầu và lần theo các handler VM."
+        warning: "Phân tích tĩnh trước khi dump sẽ chỉ thấy mã rác hoặc trình thông dịch bytecode ảo."
+      - tool_id: x64dbg
+        fallback_name: "x64dbg"
+        fallback_type: "gui"
+        step: 3
+        reason: "Kết hợp plugin ScyllaHide để ẩn trình gỡ lỗi, theo dõi API hệ thống, bắt OEP và khôi phục IAT."
+        warning: "Bắt buộc cài thêm plugin ScyllaHide (chống IsDebuggerPresent, NtQueryInformationProcess, RDTSC) và chạy trong VM."
+
+  - id: classic_pe_packer
+    title: "Trình nén thực thi cổ điển (ASPack / MPRESS / PECompact / NSPack)"
+    priority: 2
+    category: "Packer/Protector"
+    match:
+      types: ["Packer", "Protector", "Cryptor", "Signature"]
+      keywords: ["ASPack", "MPRESS", "PECompact", "NSPack", "Petite", "FSG", "MEW", "kkrunchy", "RLPack"]
+    summary: "Tệp bị nén bởi PE Packer truyền thống. Cách hiệu quả nhất là dùng kỹ thuật Hardware Breakpoint trên thanh ghi ESP trong x64dbg/x32dbg để tìm OEP và Dump ra file sạch."
+    recommendations:
+      - tool_id: pe_bear
+        fallback_name: "PE-bear"
+        fallback_type: "gui"
+        step: 1
+        reason: "Xem bố cục Section (Virtual Size vs Raw Size) và vùng địa chỉ dự kiến chứa code gốc (.text / .code)."
+        warning: ""
+      - tool_id: capa
+        fallback_name: "CAPA"
+        fallback_type: "cli"
+        step: 2
+        reason: "Đánh giá nhanh sau khi đã Dump tệp khỏi bộ nhớ."
+        warning: "Chạy CAPA trên tệp đang nén sẽ chỉ báo packed — hãy chạy lại trên bản đã dump."
+      - tool_id: x64dbg
+        fallback_name: "x64dbg"
+        fallback_type: "gui"
+        step: 3
+        reason: "Dùng mẹo ESP Law (đặt Hardware Breakpoint on Access sau lệnh PUSHAD đầu tiên) để nhảy thẳng tới OEP và Dump bằng Scylla."
+        warning: "Nếu tệp là PE32 (32-bit), hãy ưu tiên mở bằng x32dbg thay vì x64dbg!"
+
+  # =========================================================================
+  # ƯU TIÊN 3 — COMPILER / NGÔN NGỮ / RUNTIME
+  # =========================================================================
+  - id: dotnet_cil
+    title: "Ứng dụng .NET (C# / VB.NET / MSIL)"
+    priority: 3
+    category: "Compiler/Language"
+    match:
+      types: ["Library", "Compiler", "Language", "Tool", "Format", "Signature"]
+      keywords: [".NET", "MSIL", "CIL", "C#", "VB.NET"]
+    summary: "Tệp biên dịch sang mã trung gian CIL (.NET). Không dùng IDA/Ghidra làm công cụ chính — hãy mở bằng dnSpyEx hoặc ILSpy để khôi phục gần như nguyên vẹn mã nguồn C#!"
+    recommendations:
+      - tool_id: dnspy
+        fallback_name: "dnSpyEx"
+        fallback_type: "gui"
+        step: 2
+        reason: "Dịch ngược trực tiếp bytecode IL sang C# / VB.NET cực kỳ rõ ràng, hỗ trợ chỉnh sửa IL và lưu lại thực thi."
+        warning: "Nếu tên class/hàm bị biến thành ký tự lạ (a, b, \u200b), hãy kiểm tra xem tệp có bị làm rối bằng Obfuscator không."
+      - tool_id: ilspy
+        fallback_name: "ILSpy"
+        fallback_type: "gui"
+        step: 2
+        reason: "Hỗ trợ tốt các tính năng C# đời mới (.NET 8/9/10, async/await, pattern matching) và ReadyToRun (R2R)."
+        warning: ""
+      - tool_id: dnspy
+        fallback_name: "dnSpyEx (Integrated Debugger)"
+        fallback_type: "gui"
+        step: 3
+        reason: "Đặt breakpoint trực tiếp ngay trên dòng lệnh C# mà không cần đọc hợp ngữ x86/x64."
+        warning: "Với tệp .NET Single-File Bundle (.NET Core/8+), kiểm tra thêm Overlay để bóc tách các DLL nhúng."
+
+  - id: golang_binary
+    title: "Ứng dụng viết bằng Go (Golang)"
+    priority: 3
+    category: "Compiler/Language"
+    match:
+      types: ["Compiler", "Language", "Library", "Linker", "Signature"]
+      keywords: ["Go", "Golang", "go1."]
+    summary: "Binary biên dịch bằng Go có kích thước lớn (nhúng sẵn runtime), dùng quy ước gọi hàm riêng và chuỗi không kết thúc bằng byte 0. Hãy chạy GoReSym trước để trích xuất danh sách hàm người dùng!"
+    recommendations:
+      - tool_id: goresym
+        fallback_name: "GoReSym"
+        fallback_type: "cli"
+        step: 2
+        reason: "Khôi phục tên gói (package), danh sách hàm (kể cả khi bị strip symbol!), cấu trúc kiểu dữ liệu từ bảng pclntab của Go."
+        warning: "Tập trung tìm các hàm bắt đầu bằng 'main.' (ví dụ: main.main, main.init) thay vì sa đà vào hàng ngàn hàm runtime.*"
+      - tool_id: ida64
+        fallback_name: "IDA Pro (64-bit)"
+        fallback_type: "gui"
+        step: 2
+        reason: "Hỗ trợ phân tích ABI thanh ghi của Go hiện đại và có thể nạp script JSON xuất ra từ GoReSym."
+        warning: "Chuỗi trong Go lưu dạng cặp {con trỏ, độ dài} nên khi đọc disassembly sẽ thấy nhiều chuỗi nối liền nhau."
+      - tool_id: x64dbg
+        fallback_name: "x64dbg"
+        fallback_type: "gui"
+        step: 3
+        reason: "Gỡ lỗi động tại địa chỉ các hàm main.* đã thu được từ GoReSym."
+        warning: "Go sử dụng Goroutine (stack động co giãn), cẩn thận khi đặt breakpoint theo địa chỉ stack cố định."
+
+  - id: rust_binary
+    title: "Ứng dụng viết bằng Rust (rustc)"
+    priority: 3
+    category: "Compiler/Language"
+    match:
+      types: ["Compiler", "Language", "Library", "Signature"]
+      keywords: ["Rust", "rustc", "cargo"]
+    summary: "Binary viết bằng Rust tối ưu hóa rất mạnh qua LLVM, nhúng nhiều mã thư viện chuẩn (core::, alloc::, std::) và chuỗi UTF-8 lưu theo độ dài (&str)."
+    recommendations:
+      - tool_id: ghidra
+        fallback_name: "Ghidra"
+        fallback_type: "gui"
+        step: 2
+        reason: "Hỗ trợ demangle tên hàm Rust (_ZN... / _R...) và dựng mã giả C cho các khối LLVM phức tạp."
+        warning: "Mẹo tìm nhanh logic chính: tra các chuỗi thông báo lỗi 'panicked at src\\main.rs' để định vị đúng hàm của tác giả!"
+      - tool_id: capa
+        fallback_name: "CAPA"
+        fallback_type: "cli"
+        step: 2
+        reason: "Tóm tắt nhanh các năng lực hệ thống (mạng, mã hóa, tệp tin) giúp định hướng vùng hàm cần đọc."
+        warning: ""
+      - tool_id: x64dbg
+        fallback_name: "x64dbg"
+        fallback_type: "gui"
+        step: 3
+        reason: "Kiểm tra trực tiếp giá trị bộ nhớ thực tế của các cấu trúc String/Vec phức tạp khi chạy."
+        warning: ""
+
+  - id: delphi_binary
+    title: "Ứng dụng Delphi / Object Pascal"
+    priority: 3
+    category: "Compiler/Language"
+    match:
+      types: ["Compiler", "Language", "Library", "Linker", "Signature"]
+      keywords: ["Delphi", "Embarcadero", "Borland Delphi", "Object Pascal", "Free Pascal", "Lazarus"]
+    summary: "Ứng dụng biên dịch bằng Delphi dùng quy ước gọi hàm 'register' (EAX, EDX, ECX) và lưu bố cục giao diện VCL Form (DFM) kèm sự kiện OnClick trong tài nguyên."
+    recommendations:
+      - tool_id: idr
+        fallback_name: "IDR (Interactive Delphi Reconstructor)"
+        fallback_type: "gui"
+        step: 2
+        reason: "Trích xuất RTTI, danh sách VCL Forms (nút bấm, sự kiện ButtonClick) và xuất Map file để nạp vào IDA/Ghidra/x64dbg."
+        warning: "Đừng dò từ hàm WinMain của Delphi — hãy mở Form Viewer trong IDR để tìm thẳng địa chỉ hàm sự kiện (ví dụ: Button1Click)!"
+      - tool_id: ghidra
+        fallback_name: "Ghidra"
+        fallback_type: "gui"
+        step: 2
+        reason: "Dịch ngược chi tiết các hàm nghiệp vụ sau khi đã xác định địa chỉ từ RTTI / IDR."
+        warning: ""
+      - tool_id: x64dbg
+        fallback_name: "x64dbg"
+        fallback_type: "gui"
+        step: 3
+        reason: "Nạp file .map từ IDR vào x32dbg/x64dbg để hiện đầy đủ tên hàm thư viện VCL khi debug."
+        warning: "Đa số ứng dụng Delphi cũ là 32-bit (PE32) — hãy kiểm tra định dạng để dùng x32dbg nếu cần."
+
+  - id: vb6_binary
+    title: "Ứng dụng Microsoft Visual Basic 5.0 / 6.0"
+    priority: 3
+    category: "Compiler/Language"
+    match:
+      types: ["Compiler", "Language", "Library", "Signature"]
+      keywords: ["Visual Basic 5.0", "Visual Basic 6.0", "MSVBVM60", "VB5!", "VB6"]
+    summary: "Ứng dụng VB6 có thể biên dịch ở chế độ Native Code hoặc P-Code (bytecode chạy bởi MSVBVM60.DLL). IDA/Ghidra thông thường không đọc được P-Code!"
+    recommendations:
+      - tool_id: vb_decompiler
+        fallback_name: "VB Decompiler"
+        fallback_type: "gui"
+        step: 2
+        reason: "Công cụ chuyên biệt đọc cấu trúc VBHeader, khôi phục Form và dịch ngược cả VB6 P-Code lẫn Native API."
+        warning: "Nếu biên dịch ở chế độ P-Code, mở trong x32dbg bạn chỉ thấy vòng lặp máy ảo trong MSVBVM60.DLL."
+      - tool_id: floss
+        fallback_name: "FLOSS"
+        fallback_type: "cli"
+        step: 2
+        reason: "Trích xuất các chuỗi Unicode (BSTR) đặc trưng của Visual Basic."
+        warning: ""
+      - tool_id: x32dbg
+        fallback_name: "x32dbg"
+        fallback_type: "gui"
+        step: 3
+        reason: "Đặt breakpoint trên các API của MSVBVM60.DLL (như __vbaStrCmp, __vbaVarTstEq) để bắt logic kiểm tra chuỗi."
+        warning: "VB6 luôn là thực thi 32-bit (PE32)."
+
+  - id: native_c_cpp
+    title: "Ứng dụng Native C / C++ (MSVC / GCC / MinGW / Clang)"
+    priority: 3
+    category: "Compiler/Language"
+    match:
+      types: ["Compiler", "Linker", "Library", "Signature"]
+      keywords: ["Microsoft Visual C/C++", "MSVC", "GCC", "MinGW", "Clang", "LLVM", "GNU linker", "Borland C++"]
+    summary: "Binary biên dịch trực tiếp ra mã máy gốc (x86/x64). Kết hợp quét tĩnh nhanh (PE-bear, CAPA, FLOSS) trước khi đi sâu vào mã giả trong IDA Pro / Ghidra."
+    recommendations:
+      - tool_id: pe_bear
+        fallback_name: "PE-bear"
+        fallback_type: "gui"
+        step: 2
+        reason: "Khảo sát nhanh kiến trúc PE, bảng Import (IAT), Export, TLS Callbacks và chữ ký bảo mật (ASLR, DEP)."
+        warning: ""
+      - tool_id: capa
+        fallback_name: "CAPA"
+        fallback_type: "cli"
+        step: 2
+        reason: "Liệt kê tự động các hành vi kỹ thuật (MITRE ATT&CK, mã hóa, kết nối mạng, thao tác tiến trình) chỉ trong vài giây."
+        warning: ""
+      - tool_id: ida64
+        fallback_name: "IDA Pro (64-bit)"
+        fallback_type: "gui"
+        step: 2
+        reason: "Trình dịch ngược & tạo mã giả (Hex-Rays Decompiler) chuẩn mực cho mã máy C/C++, tự nhận diện thư viện chuẩn qua FLIRT."
+        warning: "Có thể dùng Ghidra thay thế hoàn toàn miễn phí nếu máy chưa có bản quyền IDA Pro."
+      - tool_id: ghidra
+        fallback_name: "Ghidra"
+        fallback_type: "gui"
+        step: 2
+        reason: "Bộ công cụ dịch ngược mạnh mẽ của NSA với trình Decompiler miễn phí cho cả x86, x64, ARM."
+        warning: ""
+      - tool_id: x64dbg
+        fallback_name: "x64dbg"
+        fallback_type: "gui"
+        step: 3
+        reason: "Gỡ lỗi động từng lệnh hợp ngữ, theo dõi thanh ghi, ngăn xếp và vùng nhớ trong thời gian thực."
+        warning: "Với tệp PE32 (32-bit), sử dụng x32dbg để tương thích kiến trúc."
+
+  - id: elf_linux_binary
+    title: "Tệp thực thi Linux / Unix (ELF32 / ELF64)"
+    priority: 3
+    category: "Compiler/Language"
+    match:
+      file_types: ["ELF", "ELF32", "ELF64"]
+    summary: "Đây là tệp thực thi định dạng ELF của Linux (không chạy trực tiếp trên Windows gốc). Dùng Ghidra/IDA trên Windows để phân tích tĩnh và chạy động trong WSL2 hoặc máy ảo Linux."
+    recommendations:
+      - tool_id: ghidra
+        fallback_name: "Ghidra"
+        fallback_type: "gui"
+        step: 2
+        reason: "Phân tích tĩnh hoàn chỉnh cấu trúc ELF32/ELF64, bảng GOT/PLT và tạo mã giả C ngay trên Windows."
+        warning: ""
+      - tool_id: floss
+        fallback_name: "FLOSS"
+        fallback_type: "cli"
+        step: 2
+        reason: "Trích xuất chuỗi ký tự ASCII/UTF-8 nhúng trong các phân vùng .rodata / .data."
+        warning: ""
+      - tool_id: ida64
+        fallback_name: "IDA Pro (64-bit)"
+        fallback_type: "gui"
+        step: 2
+        reason: "Phân tích luồng điều khiển ELF và hỗ trợ Remote Linux Debugger nối tới máy ảo Linux / WSL."
+        warning: "Để phân tích động (Bước 3), hãy sử dụng GDB (pwndbg / gef) hoặc strace/ltrace bên trong máy ảo Linux."
+
+# =========================================================================
+# BỘ ĐỀ XUẤT KHI BỘ LỌC HEURISTIC PHÁT HIỆN SUSPECTED CUSTOM PACKER
+# =========================================================================
+heuristic_recommendations:
+  - tool_id: pe_bear
+    fallback_name: "PE-bear (Soi Header & Overlay)"
+    fallback_type: "gui"
+    step: 1
+    reason: "Entropy bất thường (> 7.2) hoặc Section bị đánh dấu nén nhưng không khớp chữ ký Packer phổ thông. Dùng PE-bear kiểm tra Section bất thường, RawSize vs VirtualSize và vùng Overlay cuối file."
+    warning: "Kiểm tra xem có phải UPX đã bị xóa chữ ký 'UPX!' ở đầu file để qua mặt trình quét tĩnh hay không!"
+  - tool_id: floss
+    fallback_name: "FLOSS (Giải mã chuỗi ẩn)"
+    fallback_type: "cli"
+    step: 1
+    reason: "Tự động mô phỏng mã máy để giải mã các Stack Strings, Tight Strings và chuỗi bị mã hóa XOR/RC4 đơn giản."
+    warning: ""
+  - tool_id: capa
+    fallback_name: "CAPA (Dò stub giải nén)"
+    fallback_type: "cli"
+    step: 2
+    reason: "Nhận diện thuật toán giải mã/giải nén (AES, RC4, ChaCha20, LZMA, aPLib) hoặc kỹ thuật cấp phát vùng nhớ thực thi trong stub."
+    warning: ""
+  - tool_id: x64dbg
+    fallback_name: "x64dbg (Unpack động qua API Breakpoint)"
+    fallback_type: "gui"
+    step: 3
+    reason: "Đặt Breakpoint tại VirtualAlloc, VirtualProtect, WriteProcessMemory hoặc NtMapViewOfSection để bắt trọn payload thực ngay khi Custom Packer giải mã vào RAM."
+    warning: "CẢNH BÁO CAO: Custom Packer rất phổ biến ở Malware / Ransomware — bắt buộc phân tích động trong Máy ảo (VM) đã cô lập hoàn toàn!"
+
+# =========================================================================
+# ĐỀ XUẤT MẶC ĐỊNH KHI KHÔNG KHỚP QUY TẮC CHUYÊN BIỆT
+# =========================================================================
+fallback_recommendations:
+  - tool_id: die_gui
+    fallback_name: "Detect It Easy (GUI)"
+    fallback_type: "gui"
+    step: 2
+    reason: "Khảo sát chi tiết cấu trúc nhị phân, Hex Viewer, biểu đồ Entropy trực quan và tìm kiếm chữ ký sâu (Deep Scan)."
+    warning: ""
+  - tool_id: pe_bear
+    fallback_name: "PE-bear"
+    fallback_type: "gui"
+    step: 2
+    reason: "Kiểm tra định dạng Header, Section và bảng Import/Export nếu là tệp PE trên Windows."
+    warning: ""
+  - tool_id: floss
+    fallback_name: "FLOSS"
+    fallback_type: "cli"
+    step: 2
+    reason: "Trích xuất toàn bộ chuỗi ký tự tĩnh và chuỗi che giấu để nắm bắt manh mối ban đầu."
+    warning: ""
+  - tool_id: ghidra
+    fallback_name: "Ghidra"
+    fallback_type: "gui"
+    step: 2
+    reason: "Nạp tệp vào trình dịch ngược đa kiến trúc để khảo sát mã máy."
+    warning: ""

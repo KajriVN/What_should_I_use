@@ -1,0 +1,268 @@
+<Window x:Class="BinaryAdvisor.UI.Dialogs.AddEditToolDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Thêm / Tùy chỉnh Công cụ Phân tích"
+        Width="720"
+        Height="690"
+        MinWidth="640"
+        MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BgCanvasBrush}"
+        Foreground="{StaticResource TextPrimaryBrush}">
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+            <TextBlock x:Name="TxtDialogTitle"
+                       Text="＋ Tự thêm Công cụ &amp; Quy tắc Gợi ý"
+                       FontSize="18"
+                       FontWeight="Bold" />
+            <TextBlock Text="Cấu hình đường dẫn thực thi, mẫu tham số CLI và điều kiện tự động xuất hiện trong luồng 3 bước mà không cần sửa YAML thủ công."
+                       FontSize="12"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       Margin="0,3,0,0"
+                       TextWrapping="Wrap" />
+        </StackPanel>
+
+        <!-- Form Body -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+            <StackPanel>
+                <!-- Card 1: Tool Identity & Command -->
+                <Border Background="{StaticResource BgSurfaceBrush}"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14,12"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="1. Thông tin Công cụ &amp; Dòng lệnh"
+                                   FontSize="13.5"
+                                   FontWeight="Bold"
+                                   Foreground="#79C0FF"
+                                   Margin="0,0,0,10" />
+
+                        <!-- Name + Tool ID -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.4*" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="1*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Tên hiển thị công cụ *" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtToolName"
+                                         Style="{StaticResource DarkTextBoxStyle}"
+                                         TextChanged="TxtToolName_TextChanged" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Mã định danh (Tool Key) *" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtToolId"
+                                         Style="{StaticResource DarkTextBoxStyle}"
+                                         FontFamily="{StaticResource MonoFont}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Tool Type -->
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="Loại khởi chạy" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <WrapPanel>
+                                <Button x:Name="BtnTypeGui"
+                                        Content="🚀 GUI — Mở cửa sổ phần mềm đồ họa"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        Margin="0,0,8,0"
+                                        Click="BtnTypeGui_Click" />
+                                <Button x:Name="BtnTypeCli"
+                                        Content="⌨ CLI — Chạy dòng lệnh ngầm &amp; in Log"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Click="BtnTypeCli_Click" />
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <!-- Executable Path -->
+                        <StackPanel Margin="0,0,0,10">
+                            <WrapPanel Margin="0,0,0,4">
+                                <TextBlock Text="Đường dẫn tệp thực thi (.exe / .bat / .cmd)" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,10,0" />
+                                <Ellipse x:Name="ExeStatusDot" Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,5,0" />
+                                <TextBlock x:Name="TxtExeStatus" FontSize="11" VerticalAlignment="Center" />
+                            </WrapPanel>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TxtExecutable"
+                                         Style="{StaticResource DarkTextBoxStyle}"
+                                         FontFamily="{StaticResource MonoFont}"
+                                         TextChanged="TxtExecutable_TextChanged" />
+                                <Button Grid.Column="1"
+                                        Content="📂 Browse..."
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Margin="8,0,0,0"
+                                        Click="BtnBrowseExe_Click" />
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- CLI Arguments + Quick Insert Chips -->
+                        <StackPanel>
+                            <TextBlock Text="Mẫu tham số (Arguments)" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <TextBox x:Name="TxtArgs"
+                                     Style="{StaticResource DarkTextBoxStyle}"
+                                     FontFamily="{StaticResource MonoFont}"
+                                     Text="&quot;{file}&quot;" />
+
+                            <WrapPanel Margin="0,6,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="Chèn nhanh biến:"
+                                           FontSize="11"
+                                           Foreground="{StaticResource TextMutedBrush}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,6,0" />
+                                <Button Content="＋ {file}" Tag="{}{file}" Style="{StaticResource SecondaryButtonStyle}" Padding="7,2" FontSize="11" Margin="0,0,5,2" Click="BtnInsertPlaceholder_Click" ToolTip="Đường dẫn đầy đủ của tệp" />
+                                <Button Content="＋ {file_dir}" Tag="{}{file_dir}" Style="{StaticResource SecondaryButtonStyle}" Padding="7,2" FontSize="11" Margin="0,0,5,2" Click="BtnInsertPlaceholder_Click" ToolTip="Thư mục chứa tệp" />
+                                <Button Content="＋ {file_name}" Tag="{}{file_name}" Style="{StaticResource SecondaryButtonStyle}" Padding="7,2" FontSize="11" Margin="0,0,5,2" Click="BtnInsertPlaceholder_Click" ToolTip="Tên tệp kèm phần mở rộng" />
+                                <Button Content="＋ {file_stem}" Tag="{}{file_stem}" Style="{StaticResource SecondaryButtonStyle}" Padding="7,2" FontSize="11" Margin="0,0,5,2" Click="BtnInsertPlaceholder_Click" ToolTip="Tên tệp không kèm phần mở rộng" />
+                                <Button Content="＋ {file_ext}" Tag="{}{file_ext}" Style="{StaticResource SecondaryButtonStyle}" Padding="7,2" FontSize="11" Margin="0,0,0,2" Click="BtnInsertPlaceholder_Click" ToolTip="Phần mở rộng (ví dụ: .exe)" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Card 2: Custom Auto-Recommend Trigger -->
+                <Border Background="{StaticResource BgSurfaceBrush}"
+                        BorderBrush="{StaticResource BorderSubtleBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14,12">
+                    <StackPanel>
+                        <TextBlock Text="2. Điều kiện Tự động Gợi ý vào Luồng 3 Bước (Tùy chọn)"
+                                   FontSize="13.5"
+                                   FontWeight="Bold"
+                                   Foreground="#FFA657"
+                                   Margin="0,0,0,8" />
+
+                        <!-- Trigger Mode Selector -->
+                        <WrapPanel Margin="0,0,0,10">
+                            <Button x:Name="BtnModeManual"
+                                    Content="Chỉ mở thủ công / Theo rules.yaml"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Margin="0,0,6,4"
+                                    Click="BtnModeManual_Click" />
+                            <Button x:Name="BtnModeKeyword"
+                                    Content="🎯 Tự gợi ý khi khớp Từ khóa / Định dạng"
+                                    Style="{StaticResource AccentButtonStyle}"
+                                    Margin="0,0,6,4"
+                                    Click="BtnModeKeyword_Click" />
+                            <Button x:Name="BtnModeAlways"
+                                    Content="📌 Luôn gợi ý cho mọi tệp"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Margin="0,0,0,4"
+                                    Click="BtnModeAlways_Click" />
+                        </WrapPanel>
+
+                        <!-- Expandable Custom Rule Details -->
+                        <StackPanel x:Name="CustomRuleDetailsPanel">
+                            <!-- Keyword & FileType Filters (only in Keyword mode) -->
+                            <Grid x:Name="KeywordFilterGrid" Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.3*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="1*" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Từ khóa kết quả DIE (cách nhau dấu phẩy)"
+                                               FontSize="11.5"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Margin="0,0,0,4" />
+                                    <TextBox x:Name="TxtKeywords"
+                                             Style="{StaticResource DarkTextBoxStyle}"
+                                             ToolTip="Ví dụ: .NET Reactor, Confuser, UPX, Delphi, AutoIt..." />
+                                    <TextBlock Text="Ví dụ: .NET Reactor, NecroBit, Confuser"
+                                               FontSize="10.5"
+                                               Foreground="{StaticResource TextMutedBrush}"
+                                               Margin="2,3,0,0" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Định dạng / Đuôi tệp (tùy chọn)"
+                                               FontSize="11.5"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Margin="0,0,0,4" />
+                                    <TextBox x:Name="TxtFileTypes"
+                                             Style="{StaticResource DarkTextBoxStyle}"
+                                             ToolTip="Ví dụ: PE64, .NET, ELF, .apk (để trống = mọi loại tệp)" />
+                                    <TextBlock Text="Ví dụ: .NET, PE64, .apk (trống = tất cả)"
+                                               FontSize="10.5"
+                                               Foreground="{StaticResource TextMutedBrush}"
+                                               Margin="2,3,0,0" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Step & Priority Selector -->
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.45*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="1*" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Hiển thị tại Bước" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                    <WrapPanel>
+                                        <Button x:Name="BtnStep1" Content="Bước 1: Unpack" Style="{StaticResource AccentButtonStyle}" Padding="9,4" Margin="0,0,6,0" Click="BtnStep1_Click" />
+                                        <Button x:Name="BtnStep2" Content="Bước 2: Tĩnh" Style="{StaticResource SecondaryButtonStyle}" Padding="9,4" Margin="0,0,6,0" Click="BtnStep2_Click" />
+                                        <Button x:Name="BtnStep3" Content="Bước 3: Động" Style="{StaticResource SecondaryButtonStyle}" Padding="9,4" Click="BtnStep3_Click" />
+                                    </WrapPanel>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Độ ưu tiên xếp hạng" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                    <WrapPanel>
+                                        <Button x:Name="BtnPrio1" Content="P1" ToolTip="Ưu tiên 1 (Cao nhất)" Style="{StaticResource SecondaryButtonStyle}" Padding="10,4" Margin="0,0,6,0" Click="BtnPrio1_Click" />
+                                        <Button x:Name="BtnPrio2" Content="P2" ToolTip="Ưu tiên 2 (Trung bình)" Style="{StaticResource AccentButtonStyle}" Padding="10,4" Margin="0,0,6,0" Click="BtnPrio2_Click" />
+                                        <Button x:Name="BtnPrio3" Content="P3" ToolTip="Ưu tiên 3 (Cơ bản)" Style="{StaticResource SecondaryButtonStyle}" Padding="10,4" Click="BtnPrio3_Click" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Reason & Warning -->
+                            <StackPanel Margin="0,0,0,8">
+                                <TextBlock Text="Lý do đề xuất (hiển thị trên Thẻ công cụ)" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtReason"
+                                         Style="{StaticResource DarkTextBoxStyle}"
+                                         Text="Công cụ tùy chỉnh do người dùng thiết lập." />
+                            </StackPanel>
+
+                            <StackPanel>
+                                <TextBlock Text="Cảnh báo lưu ý (tùy chọn — hiện khung vàng trên Thẻ)" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtWarning"
+                                         Style="{StaticResource DarkTextBoxStyle}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Content="Hủy"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Width="95"
+                    Margin="0,0,10,0"
+                    Click="BtnCancel_Click" />
+            <Button Content="✔ Lưu Công cụ"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Width="150"
+                    Click="BtnSave_Click" />
+        </StackPanel>
+    </Grid>
+</Window>
